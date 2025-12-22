@@ -16,6 +16,9 @@ using Statistics
 using LinearAlgebra
 using KernelFunctions
 using NNlib
+using HTTP
+using JSON
+using ColorVectorSpace
 
 # include my codes
 include(joinpath(_PATH_TO_SRC, "Types.jl"));
