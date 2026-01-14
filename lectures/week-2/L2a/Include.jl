@@ -19,6 +19,9 @@ using NNlib
 using HTTP
 using JSON
 using ColorVectorSpace
+using Colors
+using Plots
+using Distributions
 
 # include my codes
 include(joinpath(_PATH_TO_SRC, "Types.jl"));
