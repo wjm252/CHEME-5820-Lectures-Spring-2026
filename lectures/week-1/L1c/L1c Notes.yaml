@@ -1,0 +1,23 @@
+L1c Notes
+
+
+Lloyds Algorithm
+    - K-Means algorithm is foundational approach to unsupervised clustering. 
+        - Suppose dataset D made up on n vectors
+    - K-Means partitions data points into K distinct groups by minimizing the within-cluster sum of squared distances
+        - Algorithm groups data points (vectors) x in D into clusters C = {c1,...,cK}
+
+Vector Norms
+    - Manhattan Norm (p=1) --> measures distance as sum of absolute differences
+    - Euclidean norm (p=2) --> measures straight line distance
+    - Maximum norm (p=∞) --> measures distance as largest component difference
+
+Lloyds K-means clustering
+    - we dont know kmax --> make it up
+    - while loop until condition converges
+    - May have to run multiple times --> will always converge
+
+1. Assignment step
+    - Assign each data point to the cluster with the nearest centroid
+    - For each data point xi in D, find the cluster cj whose centroid μj is closest to xi based on chosen distance metric (e.g., Euclidean distance)
+    - Assign xi to cluster cj
