@@ -83,18 +83,17 @@ While $\texttt{converged}$ is $\texttt{false}$ and $\texttt{iter} < \texttt{maxi
 2. **Update step**: Store the current centroids $\hat{\boldsymbol{\mu}}_{j} \leftarrow \boldsymbol{\mu}_{j}$ for all $j$. Then, for each cluster $j = 1$ to $K$, recompute the centroid as the mean of all points assigned to cluster $j$:
    $$\boldsymbol{\mu}_{j} \leftarrow \frac{1}{|\mathcal{C}_{j}|} \sum_{\mathbf{x} \in \mathcal{C}_{j}} \mathbf{x}$$
    where $\mathcal{C}_{j} = \{\mathbf{x}_{i} : c_{i} = j\}$ is the set of points assigned to cluster $j$, and $|\mathcal{C}_{j}|$ is the number of points in that cluster.
-
+3. **Convergence check**: Compute the maximum change in centroid positions:
+   $$\Delta = \max_{j} \lVert\boldsymbol{\mu}_{j} - \hat{\boldsymbol{\mu}}_{j}\rVert_{2}^{2}$$
+   If $\Delta < \epsilon$ (where $\epsilon$ is a small tolerance threshold), set $\texttt{converged} \leftarrow \texttt{true}$ and exit the loop. Otherwise, increment $\texttt{iter} \leftarrow \texttt{iter} + 1$ and continue to the next iteration.
     - Typical values for the convergence tolerance are $\epsilon \in \{10^{-4}, 10^{-6}\}$. Smaller values yield tighter convergence at the cost of more iterations. When features are standardized to unit variance, these default values work well; for unstandardized data, scale $\epsilon$ proportionally to the squared feature magnitudes.
-    - If $\texttt{iter} \geq \texttt{maxiter}$, issue warning that maximum iterations reached without convergence and exit. Otherwise, increment $\texttt{iter} \leftarrow \texttt{iter} + 1$ and continue to the next iteration.
-    - Typical values for the convergence tolerance are $\epsilon \in \{10^{-4}, 10^{-6}\}$. Smaller values yield tighter convergence at the cost of more iterations.
+    - If $\texttt{iter} \geq \texttt{maxiter}$, issue warning that maximum iterations reached without convergence and exit.
 
 > __Practical considerations:__
 >
-> * __Convergence guarantee__: K-means is guaranteed to converge to a local minimum. The objective function $J = \sum_{i=1}^{n} \left\|\mathbf{x}_{i} - \boldsymbol{\mu}_{c_{i}}\right\|_{2}^{2}$ decreases monotonically because: (1) the assignment step assigns each point to its nearest centroid, which cannot increase $J$, and (2) the update step computes centroids as means, which minimizes the sum of squared distances for the current assignments. Since there are finitely many possible clusterings and $J$ is non-increasing, convergence is guaranteed in finite iterations, typically within 10–50 iterations.
+> * __Convergence guarantee__: K-means is guaranteed to converge to a local minimum. The objective function $J = \sum_{i=1}^{n} \left\|\mathbf{x}_{i} - \boldsymbol{\mu}_{c_{i}}\right\|_{2}^{2}$ (where $\boldsymbol{\mu}_{c_{i}}$ denotes the centroid of the cluster that point $i$ is assigned to) decreases monotonically because: (1) the assignment step assigns each point to its nearest centroid, which cannot increase $J$, and (2) the update step computes centroids as means, which minimizes the sum of squared distances for the current assignments. Since there are finitely many possible clusterings and $J$ is non-increasing, convergence is guaranteed in finite iterations, typically within 10–50 iterations.
 >
 > * __Computational complexity__: The complexity is $O(nKm \cdot t)$, where $t$ is iterations, $n$ is data points, and $m$ is dimensionality. For large datasets (typically $n > 100{,}000$), mini-batch K-means reduces per-iteration cost to $O(Bm)$ where $B$ is the mini-batch size (commonly $B = 100$ to $1000$), trading some accuracy for speed. Mini-batch K-means randomly samples a subset of points for each iteration, making it practical for datasets too large to fit in memory.
->
-> * __Computational complexity__: The complexity is $O(nKm \cdot t)$, where $t$ is iterations, $n$ is data points, and $m$ is dimensionality. For large datasets, mini-batch K-means reduces per-iteration cost to $O(Bm)$ where $B$ is the mini-batch size, trading some accuracy for speed.
 
 ___
 
