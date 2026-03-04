@@ -29,4 +29,6 @@ using Distributions
 using PrettyTables
 using DataFrames
 using StatsBase
-using IJulia
+
+# load my codes -
+include(joinpath(_PATH_TO_SRC, "Compute.jl"));

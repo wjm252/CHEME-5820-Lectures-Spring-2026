@@ -29,3 +29,7 @@ using Test
 using Random
 using LinearAlgebra
 using Printf
+using NNlib
+
+# set the random seed for reproducibility
+Random.seed!(1234);
