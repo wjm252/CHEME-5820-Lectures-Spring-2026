@@ -2,7 +2,7 @@
 const _ROOT = @__DIR__
 const _PATH_TO_SRC = joinpath(_ROOT, "src");
 const _PATH_TO_DATA = joinpath(_ROOT, "data");
-const _PATH_TO_IMAGES = joinpath(_ROOT, "images");
+const _PATH_TO_FIGS = joinpath(_ROOT, "figs");
 
 # load external packages -
 using Pkg
@@ -17,7 +17,6 @@ using Images
 using ImageInTerminal
 using FileIO
 using ImageIO
-using OneHotArrays
 using Statistics
 using JLD2
 using LinearAlgebra
@@ -25,8 +24,10 @@ using Plots
 using Colors
 using Distances
 using NNlib
-using Flux
-using ProgressMeter
+using Distributions
+using Random
+using DataFrames
+using PrettyTables
 
-# load my codes -
-include(joinpath(_PATH_TO_SRC, "Types.jl"));
+# include source files -
+include(joinpath(_PATH_TO_SRC, "Compute.jl"));

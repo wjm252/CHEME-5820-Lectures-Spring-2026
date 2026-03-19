@@ -30,3 +30,9 @@ using PrettyTables
 using DataFrames
 using StatsBase
 using IJulia
+
+# load source files -
+include(joinpath(_PATH_TO_SRC, "BagOfWords.jl"));
+include(joinpath(_PATH_TO_SRC, "TFIDF.jl"));
+include(joinpath(_PATH_TO_SRC, "PMI.jl"));
+include(joinpath(_PATH_TO_SRC, "CBOW.jl"));

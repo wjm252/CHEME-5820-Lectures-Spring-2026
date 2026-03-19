@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh api:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(pdflatex:*)",
+      "Bash(kpsewhich:*)",
+      "Bash(sips:*)",
+      "Bash(jupyter nbconvert:*)",
+      "Bash(/tmp/CHEME-5820-Labs-Spring-2026/labs/week-8/L8b/CHEME-5820-L8b-Lab-Solution-StochasticAttention-Spring-2026.ipynb:*)",
+      "Bash(python3:*)"
+    ]
+  }
+}
