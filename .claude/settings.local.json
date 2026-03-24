@@ -9,7 +9,13 @@
       "Bash(sips:*)",
       "Bash(jupyter nbconvert:*)",
       "Bash(/tmp/CHEME-5820-Labs-Spring-2026/labs/week-8/L8b/CHEME-5820-L8b-Lab-Solution-StochasticAttention-Spring-2026.ipynb:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(pdf2svg:*)",
+      "Bash(inkscape Fig-GloVe-ProbeWord-Ratio.pdf --export-filename=Fig-GloVe-ProbeWord-Ratio.svg --export-type=svg)",
+      "Bash(inkscape Fig-GloVe-Training-Pipeline.pdf --export-filename=Fig-GloVe-Training-Pipeline.svg --export-type=svg)",
+      "Bash(inkscape Fig-Autoencoder-Architecture.pdf --export-filename=Fig-Autoencoder-Architecture.svg --export-type=svg)",
+      "Bash(dvisvgm:*)",
+      "Bash(inkscape:*)"
     ]
   }
 }
