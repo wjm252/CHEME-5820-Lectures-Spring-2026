@@ -1,0 +1,159 @@
+# Advanced: Backpropagation Through Time, Derivation and Gradient Analysis
+This notebook derives the gradient of the loss function with respect to the recurrent weight matrix in an Elman RNN, analyzes the conditions under which gradients vanish or explode, and shows how an additive state update provides a gradient path that avoids the vanishing problem.
+
+> __Learning Objectives:__
+>
+> By the end of this notebook, you should be able to:
+>
+> * __Derive the BPTT gradient for an Elman RNN:__ Apply the chain rule to compute the gradient of the loss with respect to the recurrent weight matrix, expressing it as a sum over time of products of Jacobian matrices.
+> * __Analyze the gradient norm and identify vanishing and exploding conditions:__ Use the spectral properties of the Jacobian product to determine when gradients decay or grow exponentially with time depth.
+> * __Show how an additive state update avoids the vanishing problem:__ Derive the gradient through an additive cell state update and compare it to the multiplicative update in the Elman RNN.
+
+Let's get started!
+___
+
+## Task 1: Derive the BPTT Gradient
+We derive the gradient of the loss function with respect to the recurrent weight matrix $\mathbf{U}_h$ in an Elman RNN. This derivation reveals the Jacobian product structure that causes vanishing and exploding gradients.
+
+> __Elman RNN and loss function__
+>
+> Recall the Elman RNN equations from the [L12a lecture](CHEME-5820-L12a-Lecture-RecurrentNetworks-Spring-2026.ipynb):
+> $$
+\begin{align*}
+\mathbf{h}_t &= \sigma_h(\mathbf{U}_h \mathbf{h}_{t-1} + \mathbf{W}_x \mathbf{x}_t + \mathbf{b}_h) \\
+\mathbf{y}_t &= \sigma_y(\mathbf{W}_y \mathbf{h}_t + \mathbf{b}_y)
+\end{align*}
+> $$
+> where $\mathbf{h}_t \in \mathbb{R}^h$ is the hidden state, $\mathbf{x}_t \in \mathbb{R}^{d_{in}}$ is the input, $\mathbf{y}_t \in \mathbb{R}^{d_{out}}$ is the output, and $\sigma_h$ is the hidden activation function (e.g., tanh). We define the total loss over a sequence of length $T$ as the sum of per-step losses:
+> $$L = \sum_{t=1}^{T} L_t(\mathbf{y}_t, \mathbf{y}_t^*)$$
+> where $\mathbf{y}_t^*$ is the target at time $t$. We also define the pre-activation at time $t$ as $\mathbf{z}_t = \mathbf{U}_h \mathbf{h}_{t-1} + \mathbf{W}_x \mathbf{x}_t + \mathbf{b}_h$, so that $\mathbf{h}_t = \sigma_h(\mathbf{z}_t)$.
+
+The recurrent weight matrix $\mathbf{U}_h$ appears in the computation of every hidden state $\mathbf{h}_1, \mathbf{h}_2, \ldots, \mathbf{h}_T$. To compute $\partial L / \partial \mathbf{U}_h$, we must account for the contribution of $\mathbf{U}_h$ at every time step.
+
+> __BPTT gradient via the chain rule__
+>
+> The gradient of the total loss with respect to $\mathbf{U}_h$ is given by:
+> $$
+\frac{\partial L}{\partial \mathbf{U}_h} = \sum_{t=1}^{T} \frac{\partial L_t}{\partial \mathbf{U}_h}
+> $$
+> Each per-step gradient requires backpropagating from $L_t$ through $\mathbf{y}_t$, through $\mathbf{h}_t$, and then back through all earlier hidden states that depend on $\mathbf{U}_h$:
+> $$
+\frac{\partial L_t}{\partial \mathbf{U}_h} = \sum_{k=1}^{t} \frac{\partial L_t}{\partial \mathbf{y}_t} \frac{\partial \mathbf{y}_t}{\partial \mathbf{h}_t} \frac{\partial \mathbf{h}_t}{\partial \mathbf{h}_k} \frac{\partial^+ \mathbf{h}_k}{\partial \mathbf{U}_h}
+> $$
+> where $\partial^+ \mathbf{h}_k / \partial \mathbf{U}_h$ denotes the *immediate* (non-recursive) derivative of $\mathbf{h}_k$ with respect to $\mathbf{U}_h$, holding $\mathbf{h}_{k-1}$ fixed. The term $\partial \mathbf{h}_t / \partial \mathbf{h}_k$ captures the recursive dependency through all intermediate hidden states.
+
+The inner sum over $k$ is the key: it requires computing $\partial \mathbf{h}_t / \partial \mathbf{h}_k$ for every $k \leq t$, which involves a product of Jacobian matrices. The term $\partial \mathbf{h}_t / \partial \mathbf{h}_k$ measures how a perturbation to the hidden state at time $k$ propagates forward to time $t$.
+
+> __Jacobian product across time steps__
+>
+> By the chain rule, the derivative of $\mathbf{h}_t$ with respect to $\mathbf{h}_k$ is a product of single-step Jacobians:
+> $$
+\frac{\partial \mathbf{h}_t}{\partial \mathbf{h}_k} = \prod_{i=k+1}^{t} \frac{\partial \mathbf{h}_i}{\partial \mathbf{h}_{i-1}}
+> $$
+> Each single-step Jacobian is:
+> $$
+\frac{\partial \mathbf{h}_i}{\partial \mathbf{h}_{i-1}} = \text{diag}\left(\sigma_h'(\mathbf{z}_i)\right) \cdot \mathbf{U}_h
+> $$
+> where $\sigma_h'(\mathbf{z}_i) \in \mathbb{R}^h$ is the element-wise derivative of the activation function evaluated at the pre-activation $\mathbf{z}_i$, and $\text{diag}(\cdot)$ places this vector on the diagonal of an $h \times h$ matrix.
+
+The gradient from time $t$ back to time $k$ therefore passes through $(t - k)$ matrix multiplications, each involving $\mathbf{U}_h$ scaled by the activation derivative. The behavior of this product determines whether the gradient vanishes, explodes, or remains stable.
+
+___
+
+## Task 2: Vanishing and Exploding Gradient Analysis
+We analyze the norm of the Jacobian product to determine the conditions under which gradients decay or grow exponentially with time depth. We use the submultiplicativity of matrix norms to bound the Jacobian product.
+
+> __Upper bound on the Jacobian product norm__
+>
+> By submultiplicativity of the operator norm $\|\cdot\|_{2}$:
+> $$
+\left\|\frac{\partial \mathbf{h}_t}{\partial \mathbf{h}_k}\right\|_{2} = \left\|\prod_{i=k+1}^{t} \text{diag}(\sigma_h'(\mathbf{z}_i)) \cdot \mathbf{U}_h\right\|_{2} \leq \prod_{i=k+1}^{t} \|\text{diag}(\sigma_h'(\mathbf{z}_i))\|_{2} \cdot \|\mathbf{U}_h\|_{2}
+> $$
+> For the tanh activation, $\sigma_h'(z) = 1 - \tanh^2(z) \in (0, 1]$, so $\|\text{diag}(\sigma_h'(\mathbf{z}_i))\|_{2} \leq 1$. Defining $\gamma = \|\mathbf{U}_h\|_{2}$ (the spectral norm of the recurrent weight matrix), we obtain:
+> $$
+\left\|\frac{\partial \mathbf{h}_t}{\partial \mathbf{h}_k}\right\|_{2} \leq \gamma^{t-k}
+> $$
+
+This bound shows that the Jacobian product norm is controlled by $\gamma^{t-k}$, where $\gamma$ is the spectral norm of $\mathbf{U}_h$. To understand the behavior more precisely, we examine the eigenstructure of $\mathbf{U}_h$.
+
+> __Eigendecomposition and gradient scaling__
+>
+> Suppose $\mathbf{U}_h$ is diagonalizable with eigendecomposition $\mathbf{U}_h = \mathbf{Q} \boldsymbol{\Lambda} \mathbf{Q}^{-1}$, where $\boldsymbol{\Lambda} = \text{diag}(\lambda_1, \ldots, \lambda_h)$ contains the eigenvalues. Then:
+> $$
+\mathbf{U}_h^{t-k} = \mathbf{Q} \boldsymbol{\Lambda}^{t-k} \mathbf{Q}^{-1} = \mathbf{Q} \, \text{diag}(\lambda_1^{t-k}, \ldots, \lambda_h^{t-k}) \, \mathbf{Q}^{-1}
+> $$
+> The diagonal entries $\lambda_i^{t-k}$ determine the gradient scaling in each eigendirection:
+> * If $|\lambda_i| < 1$: the component $\lambda_i^{t-k} \to 0$ exponentially as $(t-k) \to \infty$.
+> * If $|\lambda_i| > 1$: the component $\lambda_i^{t-k} \to \infty$ exponentially.
+> * If $|\lambda_i| = 1$: the component remains bounded.
+
+In practice, the full Jacobian product includes the activation derivative $\text{diag}(\sigma_h'(\mathbf{z}_i))$, which further shrinks the gradient (since $\sigma_h' \leq 1$ for tanh). This makes the vanishing condition easier to satisfy and the exploding condition harder. We now state the conditions formally.
+
+> __Vanishing and exploding gradient conditions__
+>
+> Let $\mathbf{J}_i = \text{diag}(\sigma_h'(\mathbf{z}_i)) \cdot \mathbf{U}_h$ denote the single-step Jacobian at time $i$.
+>
+> * **Vanishing gradients:** If $\|\mathbf{J}_i\|_{2} < 1$ for all $i$, then $\|\partial \mathbf{h}_t / \partial \mathbf{h}_k\|_{2} \to 0$ exponentially as $(t-k) \to \infty$. Gradients from distant time steps contribute negligibly to $\partial L / \partial \mathbf{U}_h$, and the network cannot learn long-range dependencies.
+> * **Exploding gradients:** If $\|\mathbf{J}_i\|_{2} > 1$ for all $i$, then $\|\partial \mathbf{h}_t / \partial \mathbf{h}_k\|_{2} \to \infty$ exponentially. Gradient updates become arbitrarily large, destabilizing training.
+
+Gradient clipping (limiting $\|\partial L / \partial \mathbf{U}_h\|_{2}$ to a maximum value) addresses exploding gradients but does nothing for vanishing gradients. The vanishing gradient problem is a fundamental architectural limitation: the multiplicative structure of the Elman RNN hidden state update guarantees that long-range gradient signals decay exponentially when $\|\mathbf{J}_i\|_{2} < 1$.
+___
+
+## Task 3: How Additive State Updates Avoid Vanishing Gradients
+The vanishing gradient problem arises from the multiplicative structure $\mathbf{h}_t = \sigma_h(\mathbf{U}_h \mathbf{h}_{t-1} + \ldots)$, where backpropagation through time requires repeated multiplication by $\text{diag}(\sigma_h') \cdot \mathbf{U}_h$. We now consider an alternative: an *additive* state update that replaces this matrix product with element-wise gating.
+
+Suppose we introduce a separate state vector $\mathbf{c}_t \in \mathbb{R}^h$ (a "cell state") that is updated additively rather than through a full matrix multiplication.
+
+> __Additive cell state update__
+>
+> Define the cell state update as:
+> $$
+\mathbf{c}_t = \mathbf{f}_t \odot \mathbf{c}_{t-1} + \mathbf{i}_t \odot \tilde{\mathbf{c}}_t
+> $$
+> where $\odot$ denotes element-wise multiplication, $\mathbf{f}_t \in (0,1)^h$ is a "forget" vector that controls how much of the previous cell state to retain, $\mathbf{i}_t \in (0,1)^h$ is an "input" vector that controls how much new information to add, and $\tilde{\mathbf{c}}_t \in \mathbb{R}^h$ is a candidate update. The vectors $\mathbf{f}_t$ and $\mathbf{i}_t$ are learned functions of the current input $\mathbf{x}_t$ and the previous hidden state (details in the [L12c lecture](CHEME-5820-L12c-Lecture-LSTM-Spring-2026.ipynb)).
+
+The key structural difference from the Elman RNN is that $\mathbf{c}_{t-1}$ is multiplied element-wise by $\mathbf{f}_t$ (a vector), not by a full matrix $\mathbf{U}_h$. We now derive the gradient through this update.
+
+> __Cell state Jacobian__
+>
+> Since the cell state update $\mathbf{c}_t = \mathbf{f}_t \odot \mathbf{c}_{t-1} + \mathbf{i}_t \odot \tilde{\mathbf{c}}_t$ is element-wise in $\mathbf{c}_{t-1}$, the Jacobian is diagonal:
+> $$
+\frac{\partial \mathbf{c}_t}{\partial \mathbf{c}_{t-1}} = \text{diag}(\mathbf{f}_t)
+> $$
+> The product across multiple time steps is:
+> $$
+\frac{\partial \mathbf{c}_t}{\partial \mathbf{c}_k} = \prod_{i=k+1}^{t} \text{diag}(\mathbf{f}_i) = \text{diag}\left(\prod_{i=k+1}^{t} \mathbf{f}_i\right)
+> $$
+> where the product of diagonal matrices is itself diagonal, with entries equal to the element-wise products of the forget vectors.
+
+This is a fundamentally different structure from the Elman RNN Jacobian product. We compare the two side by side.
+
+> __Gradient path comparison__
+>
+> | Property | Elman RNN | Additive cell state |
+> | --- | --- | --- |
+> | State update | $\mathbf{h}_t = \sigma_h(\mathbf{U}_h \mathbf{h}_{t-1} + \ldots)$ | $\mathbf{c}_t = \mathbf{f}_t \odot \mathbf{c}_{t-1} + \mathbf{i}_t \odot \tilde{\mathbf{c}}_t$ |
+> | Single-step Jacobian | $\text{diag}(\sigma_h') \cdot \mathbf{U}_h$ (full matrix) | $\text{diag}(\mathbf{f}_t)$ (diagonal) |
+> | Product over $(t-k)$ steps | Product of full matrices | Product of diagonal matrices |
+> | Norm bound | $\leq \|\mathbf{U}_h\|_{2}^{t-k}$ | $= \prod_{i} \|\mathbf{f}_i\|_{\infty}$ |
+> | Vanishing condition | $\|\text{diag}(\sigma_h') \cdot \mathbf{U}_h\|_{2} < 1$ | $f_{t,j} \ll 1$ for all $j$ |
+> | Can avoid vanishing? | No (architectural limitation) | Yes (when $\mathbf{f}_t \approx \mathbf{1}$) |
+
+When the forget vector $\mathbf{f}_t$ is close to $\mathbf{1}$ (the network learns to "remember"), the product $\prod_{i=k+1}^{t} \mathbf{f}_i$ stays near $\mathbf{1}$ regardless of the time depth $(t-k)$. The gradient neither vanishes nor explodes. The network can selectively forget (by setting $f_{t,j}$ close to 0 for specific dimensions $j$) or remember (by keeping $f_{t,j}$ close to 1), learning this choice from data.
+
+This additive cell state is the core idea behind Long Short-Term Memory (LSTM) networks, introduced by [Hochreiter and Schmidhuber (1997)](https://doi.org/10.1162/neco.1997.9.8.1735). In an LSTM, the forget vector $\mathbf{f}_t$, the input vector $\mathbf{i}_t$, and an additional output gate $\mathbf{o}_t$ are computed from learned weight matrices applied to the input and previous hidden state. The full LSTM architecture is derived in the [L12c lecture on LSTM Networks](CHEME-5820-L12c-Lecture-LSTM-Spring-2026.ipynb).
+
+
+___
+
+## Summary
+The BPTT gradient for an Elman RNN involves a product of Jacobian matrices across time steps, and the spectral properties of this product determine whether gradients vanish or explode.
+
+> __Key Takeaways:__
+>
+> * **BPTT gradients involve products of Jacobian matrices across time steps:** The gradient of the loss with respect to the recurrent weight matrix requires backpropagating through a product of single-step Jacobians, each containing the recurrent weight matrix and the activation derivative.
+> * **The spectral properties of the Jacobian product determine gradient behavior:** When the spectral norm of the single-step Jacobian is less than one, gradients vanish exponentially with time depth. When it is greater than one, gradients explode. Gradient clipping addresses exploding gradients but not vanishing gradients.
+> * **Additive cell state updates replace matrix products with element-wise products:** By using a diagonal Jacobian (the forget gate) instead of a full matrix, additive architectures provide a gradient path that stays near one when the network learns to remember, avoiding the vanishing gradient problem.
+
+The additive cell state derived here is the foundation of the LSTM architecture studied in the [L12c lecture](CHEME-5820-L12c-Lecture-LSTM-Spring-2026.ipynb).
+___

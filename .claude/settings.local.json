@@ -15,7 +15,8 @@
       "Bash(inkscape Fig-GloVe-Training-Pipeline.pdf --export-filename=Fig-GloVe-Training-Pipeline.svg --export-type=svg)",
       "Bash(inkscape Fig-Autoencoder-Architecture.pdf --export-filename=Fig-Autoencoder-Architecture.svg --export-type=svg)",
       "Bash(dvisvgm:*)",
-      "Bash(inkscape:*)"
+      "Bash(inkscape:*)",
+      "Bash(claude auth:*)"
     ]
   }
 }
